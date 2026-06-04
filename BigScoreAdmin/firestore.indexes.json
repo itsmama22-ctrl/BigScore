@@ -1,0 +1,76 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "startTime", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startTime", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "competitionId", "order": "ASCENDING" },
+        { "fieldPath": "startTime", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "startDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "teams",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "competitionIds", "arrayConfig": "CONTAINS" }
+      ]
+    },
+    {
+      "collectionGroup": "teams",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "competitionIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "type", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "news",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isActive", "order": "ASCENDING" },
+        { "fieldPath": "publishedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "news",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "source.type", "order": "ASCENDING" },
+        { "fieldPath": "publishedAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "scheduledAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,52 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // =========================================================================
+    // Image upload rules
+    // =========================================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|webp)');
+    }
+
+    function isUnderMaxSize(maxMB) {
+      return request.resource.size < maxMB * 1024 * 1024;
+    }
+
+    // Admin users can upload images up to 10MB.
+    // Public reads for all files (thumbnails, logos, posters).
+    match /{allPaths=**} {
+      // Public read access for all images.
+      allow read: if true;
+
+      // Write restricted to authenticated admin users.
+      // NOTE: For production, restrict this further by validating
+      // the user's admin role via a custom claim or signed URL.
+      // Currently allows any authenticated user with valid image.
+      allow create, update: if isAuthenticated()
+                               && isValidImage()
+                               && isUnderMaxSize(10);
+
+      // No deletes from client — use server actions for cleanup.
+      allow delete: if false;
+    }
+
+    // =========================================================================
+    // Private / sensitive paths
+    // =========================================================================
+
+    // match /private/{allPaths=**} {
+    //   allow read, write: if false;
+    // }
+
+    // match /admin/{allPaths=**} {
+    //   allow read: if false;
+    //   allow write: if false;
+    // }
+  }
+}

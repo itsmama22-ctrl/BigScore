@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // Device tokens — iOS app needs to read/write for FCM push
+    // =========================================================================
+
+    match /deviceTokens/{tokenId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // All collections — allow reads, deny writes (admin uses Admin SDK)
+    // =========================================================================
+
+    match /{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

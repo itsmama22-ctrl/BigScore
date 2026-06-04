@@ -1,0 +1,55 @@
+export const colors = {
+  bg: {
+    primary: "#0F1419",
+    secondary: "#16181D",
+    tertiary: "#1C1F26",
+    elevated: "#22252D",
+    overlay: "rgba(0, 0, 0, 0.65)",
+  },
+  accent: {
+    gold: "#FFD700",
+    "gold-hover": "#E6C200",
+    blue: "#00D9FF",
+    "blue-hover": "#00B8D9",
+    green: "#00FF88",
+    red: "#FF3B5C",
+    "red-hover": "#E6334F",
+    orange: "#FF9500",
+    purple: "#A855F7",
+  },
+  text: {
+    primary: "#FFFFFF",
+    secondary: "#B8C5D6",
+    tertiary: "#6B7A94",
+    disabled: "#3D4A5C",
+  },
+  border: {
+    default: "#2A3654",
+    muted: "#1F2937",
+    focus: "#00D9FF",
+    error: "#FF3B5C",
+  },
+  status: {
+    live: "#FF3B5C",
+    scheduled: "#FF9500",
+    finished: "#00FF88",
+    draft: "#6B7A94",
+    disabled: "#3D4A5C",
+  },
+  button: {
+    primaryBg: "#FFD700",
+    primaryHover: "#E6C200",
+    primaryText: "#0F1419",
+    secondaryBg: "#00D9FF",
+    secondaryHover: "#00B8D9",
+    secondaryText: "#0F1419",
+    dangerBg: "#FF3B5C",
+    dangerHover: "#E6334F",
+    dangerText: "#FFFFFF",
+    ghostBg: "transparent",
+    ghostHover: "#1C1F26",
+    ghostText: "#B8C5D6",
+  },
+} as const;
+
+export type ColorScheme = typeof colors;
