@@ -123,7 +123,7 @@ export async function getDocuments(collection: string, options?: {
   const params: string[] = [];
 
   if (options?.orderByField) {
-    const dir = options.orderByDir === "desc" ? "DESCENDING" : "ASCENDING";
+    const dir = options.orderByDir === "desc" ? "desc" : "asc";
     params.push(`orderBy=${encodeURIComponent(`${options.orderByField} ${dir}`)}`);
   }
   if (options?.limitCount) {
