@@ -215,13 +215,33 @@ async function sendViaAdminSdk(
   }
 }
 
+function buildFcmPayload(
+  parsed: { data: { notificationType: string; title_en?: string; body_en?: string; title_ar?: string; body_ar?: string; title_fr?: string; body_fr?: string } }
+) {
+  const notifTitle = parsed.data.title_en || parsed.data.title_ar || parsed.data.title_fr || "BigScore";
+  const notifBody = parsed.data.body_en || parsed.data.body_ar || parsed.data.body_fr || "";
+  return {
+    notification: { title: notifTitle, body: notifBody },
+    data: {
+      type: parsed.data.notificationType,
+      title_en: parsed.data.title_en ?? "",
+    },
+  };
+}
+
 async function sendViaFcmRest(
   parsed: { data: { notificationType: string; title_en?: string; body_en?: string; title_ar?: string; body_ar?: string; title_fr?: string; body_fr?: string } },
   allTokens: string[]
 ) {
+  const serverKey = process.env.FCM_SERVER_KEY;
+  if (serverKey) {
+    await sendViaFcmLegacy(serverKey, parsed, allTokens);
+    return;
+  }
+
   const key = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
   const email = process.env.FIREBASE_CLIENT_EMAIL;
-  if (!key || !email) throw new Error("Missing FCM credentials");
+  if (!key || !email) throw new Error("Missing FCM credentials (set FCM_SERVER_KEY or FIREBASE_CLIENT_EMAIL/FIREBASE_PRIVATE_KEY)");
 
   const { JWT } = await import("google-auth-library");
   const jwtClient = new JWT({
@@ -229,40 +249,66 @@ async function sendViaFcmRest(
     key,
     scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
   });
-  const tokenRes = await jwtClient.getAccessToken();
-  const bearer = tokenRes?.token;
+  let bearer: string | undefined;
+  try {
+    const tokenRes = await jwtClient.getAccessToken();
+    bearer = tokenRes?.token ?? undefined;
+  } catch (tokenErr) {
+    const tErr = tokenErr instanceof Error ? tokenErr.message : String(tokenErr);
+    console.error("[N4] OAuth2 error, trying legacy fallback:", tErr);
+    const legacyKey = process.env.FCM_SERVER_KEY;
+    if (legacyKey) {
+      await sendViaFcmLegacy(legacyKey, parsed, allTokens);
+      return;
+    }
+    throw new Error("FCM auth failed: " + tErr);
+  }
   if (!bearer) throw new Error("Failed to get FCM access token");
 
-  const notifTitle = parsed.data.title_en || parsed.data.title_ar || parsed.data.title_fr || "BigScore";
-  const notifBody = parsed.data.body_en || parsed.data.body_ar || parsed.data.body_fr || "";
+  const payload = buildFcmPayload(parsed);
+  for (let i = 0; i < allTokens.length; i += 500) {
+    const chunk = allTokens.slice(i, i + 500);
+    await Promise.allSettled(chunk.map((token) =>
+      fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${bearer}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          validate_only: false,
+          message: { ...payload, token },
+        }),
+      }).then(async (r) => {
+        if (!r.ok) {
+          const err = await r.text().catch(() => "");
+          console.error("[N4] FCM REST error", r.status, err.slice(0, 200));
+        }
+      })
+    ));
+  }
+}
 
+async function sendViaFcmLegacy(
+  serverKey: string,
+  parsed: { data: { notificationType: string; title_en?: string; body_en?: string; title_ar?: string; body_ar?: string; title_fr?: string; body_fr?: string } },
+  allTokens: string[]
+) {
+  const payload = buildFcmPayload(parsed);
   const chunkSize = 500;
   for (let i = 0; i < allTokens.length; i += chunkSize) {
     const chunk = allTokens.slice(i, i + chunkSize);
-    const res = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${bearer}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          validate_only: false,
-          message: {
-            notification: { title: notifTitle, body: notifBody },
-            data: {
-              type: parsed.data.notificationType,
-              title_en: parsed.data.title_en ?? "",
-            },
-            tokens: chunk,
-          },
-        }),
-      }
-    );
+    const res = await fetch("https://fcm.googleapis.com/fcm/send", {
+      method: "POST",
+      headers: {
+        Authorization: `key=${serverKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        registration_ids: chunk,
+        ...payload,
+      }),
+    });
     if (!res.ok) {
       const err = await res.text().catch(() => "");
-      console.error("[N4] FCM REST error", res.status, err.slice(0, 300));
+      console.error("[N4] FCM Legacy error", res.status, err.slice(0, 300));
     }
   }
 }
