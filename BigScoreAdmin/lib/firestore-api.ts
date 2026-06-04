@@ -26,7 +26,10 @@ function decodeValue(v: Record<string, unknown>): unknown {
   if ("integerValue" in v) return Number(v.integerValue);
   if ("doubleValue" in v) return v.doubleValue;
   if ("booleanValue" in v) return v.booleanValue;
-  if ("timestampValue" in v) return v.timestampValue;
+  if ("timestampValue" in v) {
+    const ms = new Date(v.timestampValue as string).getTime();
+    return { seconds: Math.floor(ms / 1000), nanoseconds: (ms % 1000) * 1000000 };
+  }
   if ("arrayValue" in v) {
     const arr = (v.arrayValue as Record<string, unknown>).values;
     if (!Array.isArray(arr)) return [];
