@@ -53,55 +53,59 @@ export default function LiveMatchesPage() {
    const loadLiveMatches = useCallback(async () => {
      setLoading(true);
      try {
-       const list = await Promise.race([
-         (async () => {
-           const q = query(collection(db, "matches"), where("status", "in", ["live", "halftime", "scheduled", "finished"]));
-           const snap = await getDocs(q);
-           const items: LiveMatch[] = [];
-           snap.forEach((d) => {
-             const data = d.data();
-             const ht = (data.homeTeam as Record<string, unknown>) ?? {};
-             const at = (data.awayTeam as Record<string, unknown>) ?? {};
-             const comp = (data.competition as Record<string, unknown>) ?? {};
-             const sc = (data.score as Record<string, unknown>) ?? {};
-             const matchDate = (data.date as { seconds: number }) ?? (data.startDate as { seconds: number });
-             const status = (data.status as string) ?? "live";
-             const isLiveOrHalftime = status === "live" || status === "halftime";
-             if (!isLiveOrHalftime && !isToday(matchDate)) return;
-             items.push({
-               id: d.id, sport: (data.sport as string) ?? "Football",
-               competitionName: (comp.name as string) ?? (data.competitionName as string) ?? "",
-               competitionCountry: (comp.country as string) ?? undefined,
-               homeTeamName: (ht.name as string) ?? (data.homeTeamName as string) ?? "",
-               awayTeamName: (at.name as string) ?? (data.awayTeamName as string) ?? "",
-               homeScore: (sc.home as number) ?? (data.homeScore as number),
-               awayScore: (sc.away as number) ?? (data.awayScore as number),
-               currentMinute: (data.minute as number) ?? (data.currentMinute as number),
-               period: (data.period as string),
-               status,
-               enableWatchMode: data.enableWatchMode ?? false, streamUrl: data.streamUrl,
-               stadium: data.stadium, venueDisplayText: data.venueDisplayText,
-               sourceType: data.sourceType ?? "manual", isPublished: data.isPublished ?? false,
-               startDate: matchDate,
-             });
-           });
-           items.sort((a, b) => {
-             const statusOrder: Record<string, number> = { live: 0, halftime: 1, scheduled: 2, finished: 3 };
-             const orderA = statusOrder[a.status] ?? 99;
-             const orderB = statusOrder[b.status] ?? 99;
-             if (orderA !== orderB) return orderA - orderB;
-             const compCompare = compareCompetitions(a.competitionName, b.competitionName, a.competitionCountry, b.competitionCountry);
-             if (compCompare !== 0) return compCompare;
-             const timeA = a.startDate?.seconds ?? 0;
-             const timeB = b.startDate?.seconds ?? 0;
-             return timeA - timeB;
-           });
-           return items;
-         })(),
-         new Promise<"__timeout__">((resolve) =>
-           setTimeout(() => resolve("__timeout__"), 4000)
-         ),
-       ]);
+        const list = await Promise.race([
+          (async () => {
+            try {
+              const q = query(collection(db, "matches"), where("status", "in", ["live", "halftime", "scheduled", "finished"]));
+              const snap = await getDocs(q);
+              const items: LiveMatch[] = [];
+              snap.forEach((d) => {
+                const data = d.data();
+                const ht = (data.homeTeam as Record<string, unknown>) ?? {};
+                const at = (data.awayTeam as Record<string, unknown>) ?? {};
+                const comp = (data.competition as Record<string, unknown>) ?? {};
+                const sc = (data.score as Record<string, unknown>) ?? {};
+                const matchDate = (data.date as { seconds: number }) ?? (data.startDate as { seconds: number });
+                const status = (data.status as string) ?? "live";
+                const isLiveOrHalftime = status === "live" || status === "halftime";
+                if (!isLiveOrHalftime && !isToday(matchDate)) return;
+                items.push({
+                  id: d.id, sport: (data.sport as string) ?? "Football",
+                  competitionName: (comp.name as string) ?? (data.competitionName as string) ?? "",
+                  competitionCountry: (comp.country as string) ?? undefined,
+                  homeTeamName: (ht.name as string) ?? (data.homeTeamName as string) ?? "",
+                  awayTeamName: (at.name as string) ?? (data.awayTeamName as string) ?? "",
+                  homeScore: (sc.home as number) ?? (data.homeScore as number),
+                  awayScore: (sc.away as number) ?? (data.awayScore as number),
+                  currentMinute: (data.minute as number) ?? (data.currentMinute as number),
+                  period: (data.period as string),
+                  status,
+                  enableWatchMode: data.enableWatchMode ?? false, streamUrl: data.streamUrl,
+                  stadium: data.stadium, venueDisplayText: data.venueDisplayText,
+                  sourceType: data.sourceType ?? "manual", isPublished: data.isPublished ?? false,
+                  startDate: matchDate,
+                });
+              });
+              items.sort((a, b) => {
+                const statusOrder: Record<string, number> = { live: 0, halftime: 1, scheduled: 2, finished: 3 };
+                const orderA = statusOrder[a.status] ?? 99;
+                const orderB = statusOrder[b.status] ?? 99;
+                if (orderA !== orderB) return orderA - orderB;
+                const compCompare = compareCompetitions(a.competitionName, b.competitionName, a.competitionCountry, b.competitionCountry);
+                if (compCompare !== 0) return compCompare;
+                const timeA = a.startDate?.seconds ?? 0;
+                const timeB = b.startDate?.seconds ?? 0;
+                return timeA - timeB;
+              });
+              return items;
+            } catch {
+              return "__timeout__" as const;
+            }
+          })(),
+          new Promise<string>((resolve) =>
+            setTimeout(() => resolve("__timeout__"), 4000)
+          ),
+        ]);
 
        if (list === "__timeout__") {
          const fallback = await queryWithFallback<LiveMatch>({
@@ -123,7 +127,7 @@ export default function LiveMatchesPage() {
          });
          setMatches(filtered);
        } else {
-         setMatches(list);
+          setMatches(list as LiveMatch[]);
        }
      } catch (e) { console.error("[live-matches]", e); } finally { setLoading(false); }
    }, []);

@@ -153,33 +153,37 @@ export default function MatchesPage() {
 
         const list = await Promise.race([
           (async () => {
-            const q = query(collection(db, "matches"), ...constraints);
-            const snap = await getDocs(q);
-            const items: MatchData[] = [];
-            snap.forEach((doc) => {
-              const data = doc.data();
-              const homeTeam = (data.homeTeam as Record<string, unknown>) ?? {};
-              const awayTeam = (data.awayTeam as Record<string, unknown>) ?? {};
-              const competition = (data.competition as Record<string, unknown>) ?? {};
-              const score = (data.score as Record<string, unknown>) ?? {};
-              const startDate = (data.date as { seconds: number }) ?? (data.startDate as { seconds: number }) ?? { seconds: 0 };
-              items.push({
-                id: doc.id,
-                competitionName: (competition.name as string) ?? (data.competitionName as string) ?? "",
-                homeTeamName: (homeTeam.name as string) ?? (data.homeTeamName as string) ?? "",
-                awayTeamName: (awayTeam.name as string) ?? (data.awayTeamName as string) ?? "",
-                homeScore: (score.home as number) ?? (data.homeScore as number),
-                awayScore: (score.away as number) ?? (data.awayScore as number),
-                startDate,
-                status: data.status ?? "scheduled",
-                enableWatchMode: data.enableWatchMode ?? false,
-                streamUrl: data.streamUrl,
-                isPublished: data.isPublished ?? false,
+            try {
+              const q = query(collection(db, "matches"), ...constraints);
+              const snap = await getDocs(q);
+              const items: MatchData[] = [];
+              snap.forEach((doc) => {
+                const data = doc.data();
+                const homeTeam = (data.homeTeam as Record<string, unknown>) ?? {};
+                const awayTeam = (data.awayTeam as Record<string, unknown>) ?? {};
+                const competition = (data.competition as Record<string, unknown>) ?? {};
+                const score = (data.score as Record<string, unknown>) ?? {};
+                const startDate = (data.date as { seconds: number }) ?? (data.startDate as { seconds: number }) ?? { seconds: 0 };
+                items.push({
+                  id: doc.id,
+                  competitionName: (competition.name as string) ?? (data.competitionName as string) ?? "",
+                  homeTeamName: (homeTeam.name as string) ?? (data.homeTeamName as string) ?? "",
+                  awayTeamName: (awayTeam.name as string) ?? (data.awayTeamName as string) ?? "",
+                  homeScore: (score.home as number) ?? (data.homeScore as number),
+                  awayScore: (score.away as number) ?? (data.awayScore as number),
+                  startDate,
+                  status: data.status ?? "scheduled",
+                  enableWatchMode: data.enableWatchMode ?? false,
+                  streamUrl: data.streamUrl,
+                  isPublished: data.isPublished ?? false,
+                });
               });
-            });
-            return items;
+              return items;
+            } catch {
+              return "__timeout__" as const;
+            }
           })(),
-          new Promise<"__timeout__">((resolve) =>
+          new Promise<string>((resolve) =>
             setTimeout(() => resolve("__timeout__"), 4000)
           ),
         ]);
@@ -199,7 +203,7 @@ export default function MatchesPage() {
           setAllMatches(fallback);
           setTotalCount(fallback.length);
         } else {
-          setAllMatches(list);
+          setAllMatches(list as MatchData[]);
           setTotalCount(list.length);
         }
       } catch (err) {
@@ -296,15 +300,19 @@ export default function MatchesPage() {
       try {
         const list = await Promise.race([
           (async () => {
-            const q = query(collection(db, "competitions"));
-            const snap = await getDocs(q);
-            const items: Competition[] = [];
-            snap.forEach((doc) => {
-              items.push({ id: doc.id, name: doc.data().name ?? doc.id });
-            });
-            return items;
+            try {
+              const q = query(collection(db, "competitions"));
+              const snap = await getDocs(q);
+              const items: Competition[] = [];
+              snap.forEach((doc) => {
+                items.push({ id: doc.id, name: doc.data().name ?? doc.id });
+              });
+              return items;
+            } catch {
+              return "__timeout__" as const;
+            }
           })(),
-          new Promise<"__timeout__">((resolve) =>
+          new Promise<string>((resolve) =>
             setTimeout(() => resolve("__timeout__"), 4000)
           ),
         ]);
@@ -313,7 +321,7 @@ export default function MatchesPage() {
           const fallback = await queryWithFallback<Competition>({ collection: "competitions" });
           setCompetitions(fallback);
         } else {
-          setCompetitions(list);
+          setCompetitions(list as Competition[]);
         }
       } catch (err) {
         console.error("[matches] Failed to load competitions:", err);

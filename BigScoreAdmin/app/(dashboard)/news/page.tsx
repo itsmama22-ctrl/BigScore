@@ -100,30 +100,34 @@ export default function NewsPage() {
     try {
       const list = await Promise.race([
         (async () => {
-          const q = query(collection(db, "news"), orderBy("createdAt", "desc"));
-          const snap = await getDocs(q);
-          const items: Article[] = [];
-          snap.forEach((d) => {
-            const data = d.data();
-            items.push({
-              id: d.id,
-              title: data.title ?? "",
-              summary: data.summary,
-              body: data.body ?? "",
-              imageUrl: data.imageUrl,
-              category: data.category ?? "Other",
-              sourceName: data.sourceName,
-              sourceUrl: data.sourceUrl,
-              sourceType: data.sourceType ?? "manual",
-              isPublished: data.isPublished ?? false,
-              isFeatured: data.isFeatured ?? false,
-              publishedAt: data.publishedAt,
-              createdAt: data.createdAt,
+          try {
+            const q = query(collection(db, "news"), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            const items: Article[] = [];
+            snap.forEach((d) => {
+              const data = d.data();
+              items.push({
+                id: d.id,
+                title: data.title ?? "",
+                summary: data.summary,
+                body: data.body ?? "",
+                imageUrl: data.imageUrl,
+                category: data.category ?? "Other",
+                sourceName: data.sourceName,
+                sourceUrl: data.sourceUrl,
+                sourceType: data.sourceType ?? "manual",
+                isPublished: data.isPublished ?? false,
+                isFeatured: data.isFeatured ?? false,
+                publishedAt: data.publishedAt,
+                createdAt: data.createdAt,
+              });
             });
-          });
-          return items;
+            return items;
+          } catch {
+            return "__timeout__" as const;
+          }
         })(),
-        new Promise<"__timeout__">((resolve) =>
+        new Promise<string>((resolve) =>
           setTimeout(() => resolve("__timeout__"), 4000)
         ),
       ]);
@@ -136,7 +140,7 @@ export default function NewsPage() {
         });
         setArticles(fallback);
       } else {
-        setArticles(list);
+        setArticles(list as Article[]);
       }
     } catch (err) {
       console.error("[news]", err);
