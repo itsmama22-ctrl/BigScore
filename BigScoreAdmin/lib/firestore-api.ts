@@ -72,7 +72,8 @@ async function getToken(): Promise<string | null> {
 }
 
 export async function restRead(url: string) {
-  const res = await fetch(`${BASE}/${url}?key=${apiKey}`);
+  const separator = url.includes("?") ? "&" : "?";
+  const res = await fetch(`${BASE}/${url}${separator}key=${apiKey}`);
   if (res.status === 404) return null;
   if (!res.ok) {
     const text = await res.text().catch(() => "");
